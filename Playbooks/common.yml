@@ -1,0 +1,22 @@
+---
+- name: Update web, nfs, and db servers
+  hosts: webservers,nfs,db
+  become: yes
+  tasks:
+    - name: Install Wireshark (RHEL)
+      yum:
+        name: wireshark
+        state: latest
+
+- name: Update load balancer
+  hosts: lb
+  become: yes
+  tasks:
+    - name: Update apt repo
+      apt:
+        update_cache: yes
+
+    - name: Install Wireshark (Ubuntu)
+      apt:
+        name: wireshark
+        state: latest
