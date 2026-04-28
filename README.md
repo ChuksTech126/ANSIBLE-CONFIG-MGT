@@ -18,5 +18,4 @@ this is a test project of the power of ansible
 
 
 
-
-CHUKS
+the author is CHUKS
