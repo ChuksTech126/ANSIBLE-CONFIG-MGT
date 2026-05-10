@@ -1,0 +1,8 @@
+mysql_databases:
+  - name: tooling
+
+mysql_users:
+  - name: Chuks
+    host: "172.31.%"
+    password: "Chuks@126"
+    priv: "tooling.*:ALL"
