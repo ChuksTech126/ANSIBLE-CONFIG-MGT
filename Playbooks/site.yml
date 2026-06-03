@@ -1,13 +1,6 @@
 ---
 - import_playbook: ../static-assignments/common.yml
 
-- hosts: all
-  name: Include dynamic variables
-
-  tasks:
-    - include_vars:
-        file: ../dynamic-assignments/env-vars.yml
-      tags:
-        - always
+- import_playbook: ../dynamic-assignments/env-vars.yml
 
 - import_playbook: ../static-assignments/uat-webservers.yml
