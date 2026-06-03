@@ -31,7 +31,7 @@ pipeline {
         stage('Ansible Connection Test') {
             steps {
                 sshagent(['private']) {
-                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev."
+                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev"
                 }
             }
         }
