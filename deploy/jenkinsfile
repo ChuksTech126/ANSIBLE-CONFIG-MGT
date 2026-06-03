@@ -25,7 +25,6 @@ pipeline {
             steps {
                 sh "echo ${env.WORKSPACE}"
                 // Add both roles/ and static-assignments/roles to roles_path
-                sh """sed -i '3 a roles_path=${env.WORKSPACE}/roles:${env.WORKSPACE}/static-assignments/roles' ${env.WORKSPACE}/deploy/ansible.cfg"""
             }
         }
 
