@@ -1,27 +1,55 @@
-stage('Ansible Preparation') {
-    steps {
-        sh "echo ${env.WORKSPACE}"
-        sh """sed -i '3 a roles_path=${env.WORKSPACE}/roles:${env.WORKSPACE}/static-assignments/roles' ${env.WORKSPACE}/deploy/ansible.cfg"""
-    }
-}
+pipeline {
+    agent any
 
-stage('Ansible Connection Test') {
-    steps {
-        sshagent(['private']) {
-            sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev"
+    environment {
+        ANSIBLE_CONFIG = "${env.WORKSPACE}/deploy/ansible.cfg"
+        ANSIBLE_HOST_KEY_CHECKING = "false"
+    }
+
+    stages {
+        stage('Initial Clean Up') {
+            steps {
+                dir(env.WORKSPACE) {
+                    deleteDir()
+                }
+            }
         }
-    }
-}
 
-stage('Run Ansible Playbook') {
-    steps {
-        ansiblePlaybook(
-            become: true,
-            credentialsId: 'private',
-            disableHostKeyChecking: true,
-            installation: 'ansible',
-            inventory: "${env.WORKSPACE}/inventory/dev",
-            playbook: "${env.WORKSPACE}/Playbooks/site.yml"
-        )
+        stage('Git SCM Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/ChuksTech126/ANSIBLE-CONFIG-MGT.git'
+            }
+        }
+
+        stage('Ansible Preparation') {
+            steps {
+                sh "echo ${env.WORKSPACE}"
+                // Add both roles/ and static-assignments/roles to roles_path
+                sh """sed -i '3 a roles_path=${env.WORKSPACE}/roles:${env.WORKSPACE}/static-assignments/roles' ${env.WORKSPACE}/deploy/ansible.cfg"""
+            }
+        }
+
+        stage('Ansible Connection Test') {
+            steps {
+                sshagent(['private']) {
+                    // Use the correct inventory file name (dev instead of dev.yml if that’s what exists)
+                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev"
+                }
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                ansiblePlaybook(
+                    become: true,
+                    credentialsId: 'private',
+                    disableHostKeyChecking: true,
+                    installation: 'ansible',
+                    // Match the inventory file name exactly
+                    inventory: "${env.WORKSPACE}/inventory/dev",
+                    playbook: "${env.WORKSPACE}/Playbooks/site.yml"
+                )
+            }
+        }
     }
 }
