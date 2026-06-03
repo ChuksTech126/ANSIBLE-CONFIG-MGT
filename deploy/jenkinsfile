@@ -1,21 +1,52 @@
- pipeline {
+pipeline {
     agent any
 
-  stages {
-    stage('Build') {
-      steps {
-        script {
-          sh 'echo "Building Stage"'
-        }
-      }
+    environment {
+        ANSIBLE_CONFIG = "${env.WORKSPACE}/deploy/ansible.cfg"
+        ANSIBLE_HOST_KEY_CHECKING = "false"
     }
 
-    stage('Test') {
-      steps {
-        script {
-          sh 'echo "Testing Stage"'
+    stages {
+        stage('Initial Clean Up') {
+            steps {
+                dir(env.WORKSPACE) {
+                    deleteDir()
+                }
+            }
         }
-      }
-    }
+
+        stage('Git SCM Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/ChuksTech126/ANSIBLE-CONFIG-MGT.git'
+            }
+        }
+
+        stage('Ansible Preparation') {
+            steps {
+                sh "echo ${env.WORKSPACE}"
+                sh """sed -i '3 a roles_path=${env.WORKSPACE}/roles' ${env.WORKSPACE}/deploy/ansible.cfg"""
+            }
+        }
+
+        stage('Ansible Connection Test') {
+            steps {
+                sshagent(['private']) {
+                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev."
+                }
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                ansiblePlaybook(
+                    become: true,
+                    credentialsId: 'private',
+                    disableHostKeyChecking: true,
+                    installation: 'ansible',
+                    inventory: "${env.WORKSPACE}/inventory/dev",
+                    playbook: "${env.WORKSPACE}/Playbooks/site.yml"
+                )
+            }
+        }
     }
 }
