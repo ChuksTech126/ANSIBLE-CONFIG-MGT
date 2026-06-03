@@ -24,14 +24,14 @@ pipeline {
         stage('Ansible Preparation') {
             steps {
                 sh "echo ${env.WORKSPACE}"
-                sh """sed -i '3 a roles_path=${env.WORKSPACE}/roles' ${env.WORKSPACE}/deploy/ansible.cfg"""
+                sh """sed -i '3 a roles_path=${env.WORKSPACE}/roles:${env.WORKSPACE}/static-assignments/roles' ${env.WORKSPACE}/deploy/ansible.cfg"""
             }
         }
 
         stage('Ansible Connection Test') {
             steps {
                 sshagent(['private']) {
-                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev"
+                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/dev.yml"
                 }
             }
         }
@@ -43,7 +43,7 @@ pipeline {
                     credentialsId: 'private',
                     disableHostKeyChecking: true,
                     installation: 'ansible',
-                    inventory: "${env.WORKSPACE}/inventory/dev",
+                    inventory: "${env.WORKSPACE}/inventory/dev.yml",
                     playbook: "${env.WORKSPACE}/Playbooks/site.yml"
                 )
             }
