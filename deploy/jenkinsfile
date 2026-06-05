@@ -1,44 +1,72 @@
 pipeline {
     agent any
 
+    environment {
+        ANSIBLE_CONFIG = "${env.WORKSPACE}/deploy/ansible.cfg"
+        ANSIBLE_HOST_KEY_CHECKING = "false"
+    }
+
+        parameters{
+            string(
+                name: 'inventory',
+                defaultValue: 'dev',
+                description: 'This is the inventory file for the environment to deploy configuration')
+        }
+
     stages {
-        stage('Build') {
+        stage('Initial Clean Up') {
             steps {
-                script {
-                    sh 'echo "Building Stage"'
+                dir(env.WORKSPACE) {
+                    deleteDir()
                 }
             }
         }
 
-        stage('Test') {
+        stage('Git SCM Checkout') {
             steps {
-                script {
-                    sh 'echo "Testing Stage"'
+                git branch: 'main', url: 'https://github.com/ChuksTech126/ANSIBLE-CONFIG-MGT.git'
+            }
+        }
+
+        stage('Ansible Preparation') {
+            steps {
+                sh "echo ${env.WORKSPACE}"
+                // Add both roles/ and static-assignments/roles to roles_path
+            }
+        }
+
+        stage('Ansible Connection Test') {
+            steps {
+                sshagent(['private']) {
+                    // Use the correct inventory file name (dev instead of dev.yml if that’s what exists)
+                    sh "ansible all -m ping -i ${env.WORKSPACE}/inventory/${params.inventory}"
                 }
             }
         }
 
-        stage('Package') {
+        stage('Run Ansible Playbook') {
             steps {
-                script {
-                    sh 'echo "Packaging Stage"'
-                }
+                ansiblePlaybook(
+                    become: true,
+                    credentialsId: 'private',
+                    disableHostKeyChecking: true,
+                    installation: 'ansible',
+                    // Match the inventory file name exactly
+                    inventory: "${env.WORKSPACE}/inventory/${params.inventory}",
+                    playbook: "${env.WORKSPACE}/Playbooks/site.yml"
+                )
             }
         }
 
-        stage('Deploy') {
+        stage('Clean Workspace after build') {
             steps {
-                script {
-                    sh 'echo "Deploying Stage"'
-                }
-            }
-        }
-
-        stage('Clean up') {
-            steps {
-                script {
-                    sh 'echo "Cleaning Stage"'
-                }
+                cleanWs(
+                    cleanWhenAborted: true,
+                    cleanWhenFailure: true,
+                    cleanWhenNotBuilt: true,
+                    cleanWhenUnstable: true,
+                    deleteDirs: true
+                )
             }
         }
     }
